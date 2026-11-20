@@ -25,7 +25,12 @@ class AuthentificationController extends Controller
         if (Auth::attempt($credentials, $request->boolean('remember'))) {
             $request->session()->regenerate();
 
-            return redirect()->intended(route('dashboard'));
+            if (Auth::user()->account_type === 'seller') {
+                if (! Auth::user()->hasVerifiedEmail()) return redirect()->route('verification.notice');
+                return redirect()->route('seller.dashboard');
+            }
+
+            return redirect()->intended(route('marketplace.products.index'));
         }
 
         return back()

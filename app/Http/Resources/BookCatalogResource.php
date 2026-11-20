@@ -4,7 +4,6 @@ namespace App\Http\Resources;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class BookCatalogResource extends JsonResource
@@ -15,7 +14,7 @@ class BookCatalogResource extends JsonResource
         $price = (float) $this->price;
 
         if ($coverUrl && ! Str::startsWith($coverUrl, ['http://', 'https://'])) {
-            $coverUrl = Storage::disk('public')->url($coverUrl);
+            $coverUrl = route('media.show', ['path' => $coverUrl]);
         }
 
         return [

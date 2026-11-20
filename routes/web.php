@@ -1,27 +1,45 @@
 <?php
 
-use App\Http\Controllers\auth\AuthentificationController;
 use App\Http\Controllers\AdvertisementController;
+use App\Http\Controllers\auth\AuthentificationController;
 use App\Http\Controllers\AuthorController;
 use App\Http\Controllers\BookController;
 use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DeliveryOptionController;
+use App\Http\Controllers\Marketplace\ManagementController;
+use App\Http\Controllers\Marketplace\ProductController;
+use App\Http\Controllers\Marketplace\SellerRegistrationController;
 use App\Http\Controllers\OrderController;
+use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PromotionController;
+use App\Http\Controllers\PublicMediaController;
 use App\Http\Controllers\StockMovementController;
+use App\Http\Middleware\MarketplaceAdmin;
+use App\Http\Middleware\MarketplaceSeller;
 use Illuminate\Support\Facades\Route;
 
-Route::redirect('/', '/dashboard');
+Route::get('/media', PublicMediaController::class)->name('media.show');
 
-Route::get('/dashboard', function () {
-    return view('dashboard.index');
-})->middleware('auth')->name('dashboard');
+Route::get('/', fn () => redirect(auth()->user()?->account_type === 'seller' ? route('seller.dashboard') : route('marketplace.products.index')));
+
+Route::get('/dashboard', DashboardController::class)->middleware(['auth', MarketplaceAdmin::class])->name('dashboard');
 
 Route::get('/login', [AuthentificationController::class, 'showLogin'])->name('login');
 Route::post('/login', [AuthentificationController::class, 'login'])->name('login.submit');
-Route::post('/logout', [AuthentificationController::class, 'logout'])->middleware('auth')->name('logout');
+Route::middleware('auth')->group(function (): void {
+    Route::get('/email/verify', [\App\Http\Controllers\SellerEmailVerificationController::class, 'notice'])->name('verification.notice');
+    Route::get('/email/verify/{id}/{hash}', [\App\Http\Controllers\SellerEmailVerificationController::class, 'verify'])->middleware(['signed', 'throttle:6,1'])->name('verification.verify');
+    Route::post('/email/verification-notification', [\App\Http\Controllers\SellerEmailVerificationController::class, 'resend'])->middleware('throttle:3,1')->name('verification.send');
+    Route::post('/logout', [AuthentificationController::class, 'logout'])->name('logout');
+    Route::get('/profil', [ProfileController::class, 'show'])->name('profile.show');
+    Route::get('/profil/modifier', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::put('/profil', [ProfileController::class, 'update'])->name('profile.update');
+});
 
-Route::middleware('auth')->prefix('admin')->name('admin.')->group(function () {
+Route::middleware(['auth', MarketplaceAdmin::class])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('mail-settings', [\App\Http\Controllers\MailConfigurationController::class, 'edit'])->name('mail-settings.edit');
+    Route::put('mail-settings', [\App\Http\Controllers\MailConfigurationController::class, 'update'])->name('mail-settings.update');
     Route::resource('authors', AuthorController::class);
     Route::resource('categories', CategoryController::class);
     Route::resource('books', BookController::class);
@@ -32,4 +50,40 @@ Route::middleware('auth')->prefix('admin')->name('admin.')->group(function () {
     Route::put('delivery-options', [DeliveryOptionController::class, 'update'])->name('delivery-options.update');
     Route::get('advertisements', [AdvertisementController::class, 'index'])->name('advertisements.index');
     Route::put('advertisements', [AdvertisementController::class, 'update'])->name('advertisements.update');
+});
+
+Route::middleware('guest')->group(function () {
+    Route::get('/devenir-vendeur', [SellerRegistrationController::class, 'create'])->name('seller.register');
+    Route::post('/devenir-vendeur', [SellerRegistrationController::class, 'store'])->middleware('throttle:5,1')->name('seller.register.store');
+    Route::get('/devenir-vendeur/google', [SellerRegistrationController::class, 'redirectToGoogle'])->name('seller.google.redirect');
+    Route::get('/devenir-vendeur/google/retour', [SellerRegistrationController::class, 'handleGoogleCallback'])->middleware('throttle:10,1')->name('seller.google.callback');
+    Route::post('/devenir-vendeur/google/terminer', [SellerRegistrationController::class, 'completeGoogleRegistration'])->middleware('throttle:5,1')->name('seller.google.complete');
+});
+Route::middleware(['auth', MarketplaceAdmin::class])->prefix('marketplace')->name('marketplace.')->group(function () {
+    Route::resource('advertisements', \App\Http\Controllers\Marketplace\AdvertisingController::class)->except('show');
+    Route::get('/sellers/{seller}/tableau-de-bord', [\App\Http\Controllers\Marketplace\SellerDashboardController::class, 'showForAdmin'])->name('sellers.dashboard');
+    Route::get('/stock', [\App\Http\Controllers\Marketplace\InventoryController::class, 'index'])->name('inventory');
+    Route::put('/stock/{product}', [\App\Http\Controllers\Marketplace\InventoryController::class, 'update'])->name('inventory.update');
+    Route::resource('products', ProductController::class)->except(['show', 'destroy']);
+    Route::get('/settings', [ManagementController::class, 'settings'])->name('settings');
+    Route::put('/settings', [ManagementController::class, 'updateSettings'])->name('settings.update');
+    Route::get('/sellers', [ManagementController::class, 'sellers'])->name('sellers');
+    Route::put('/sellers/{seller}', [ManagementController::class, 'updateSeller'])->name('sellers.update');
+    Route::get('/orders', [ManagementController::class, 'orders'])->name('orders');
+    Route::put('/orders/{sellerOrder}', [ManagementController::class, 'updateOrder'])->name('orders.update');
+});
+Route::middleware(['auth', MarketplaceSeller::class])->prefix('vendeur')->name('seller.')->group(function () {
+    Route::get('/configuration-mail', [\App\Http\Controllers\MailConfigurationController::class, 'sellerEdit'])->name('mail-settings.edit');
+    Route::put('/configuration-mail', [\App\Http\Controllers\MailConfigurationController::class, 'sellerUpdate'])->name('mail-settings.update');
+    Route::get('/membres', [\App\Http\Controllers\Marketplace\SellerMemberController::class, 'index'])->name('members.index');
+    Route::post('/membres', [\App\Http\Controllers\Marketplace\SellerMemberController::class, 'store'])->middleware('throttle:10,1')->name('members.store');
+    Route::put('/membres/{member}', [\App\Http\Controllers\Marketplace\SellerMemberController::class, 'update'])->name('members.update');
+    Route::get('/tableau-de-bord', \App\Http\Controllers\Marketplace\SellerDashboardController::class)->name('dashboard');
+    Route::get('/stock', [\App\Http\Controllers\Marketplace\InventoryController::class, 'index'])->name('inventory');
+    Route::put('/stock/{product}', [\App\Http\Controllers\Marketplace\InventoryController::class, 'update'])->name('inventory.update');
+    Route::resource('products', ProductController::class)->except(['show', 'destroy']);
+    Route::get('/boutique', [ManagementController::class, 'shop'])->name('shop');
+    Route::put('/boutique', [ManagementController::class, 'updateShop'])->name('shop.update');
+    Route::get('/commandes', [ManagementController::class, 'orders'])->name('orders');
+    Route::put('/commandes/{sellerOrder}', [ManagementController::class, 'updateOrder'])->name('orders.update');
 });

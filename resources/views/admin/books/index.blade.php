@@ -53,7 +53,7 @@
                                 <div class="book-cell">
                                     <span class="cover-thumb" style="background: {{ $book->cover_background ?: 'linear-gradient(145deg,#2A5F8E,#1a3a5c)' }}">
                                         @if ($book->cover_image)
-                                            <img src="{{ $book->cover_image }}" alt="{{ $book->title }}">
+                                            <img src="{{ \Illuminate\Support\Str::startsWith($book->cover_image, ['http://', 'https://']) ? $book->cover_image : route('media.show', ['path' => $book->cover_image]) }}" alt="{{ $book->title }}">
                                         @else
                                             {{ $book->cover_emoji ?: 'B' }}
                                         @endif

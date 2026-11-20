@@ -3,6 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" type="image/png" href="{{ asset('logo-librairie-dominion.png') }}?v=1">
     <title>@yield('title', 'Dashboard') - {{ config('app.name', 'Chapitre') }}</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -63,13 +64,15 @@
             background: var(--navy);
         }
         .sb-brand {
+            min-height: 126px;
             display: flex;
             align-items: center;
-            gap: 10px;
-            padding: 20px 18px;
+            justify-content: center;
+            padding: 10px 16px;
             border-bottom: 1px solid rgba(255, 255, 255, .08);
         }
-        .sb-logo {
+        .sb-brand-logo { width: 104px; height: 104px; display: block; }
+        .sb-brand-logo img { width: 100%; height: 100%; display: block; object-fit: contain; }        .sb-logo {
             display: flex;
             align-items: center;
             gap: 8px;
@@ -163,7 +166,22 @@
             background: var(--white);
             box-shadow: var(--shadow);
         }
-        .topbar-title {
+        .account-menu { position: relative; }
+        .account-menu summary { min-height: 42px; display: flex; align-items: center; gap: 9px; padding: 4px 8px; border-radius: var(--radius); cursor: pointer; list-style: none; }
+        .account-menu summary::-webkit-details-marker { display: none; }
+        .account-menu summary:hover { background: var(--sand); }
+        .account-avatar { width: 32px; height: 32px; display: grid; place-items: center; border-radius: 50%; color: var(--white); background: var(--amber); font-size: 11px; font-weight: 700; }
+        .account-copy { min-width: 105px; display: flex; flex-direction: column; line-height: 1.25; }
+        .account-copy strong { max-width: 150px; overflow: hidden; color: var(--navy); font-size: 11.5px; text-overflow: ellipsis; white-space: nowrap; }
+        .account-copy small { color: var(--muted); font-size: 9.5px; }
+        .account-dropdown { width: 245px; position: absolute; top: calc(100% + 9px); right: 0; z-index: 200; padding: 7px; border: 1px solid var(--border); border-radius: 7px; background: var(--white); box-shadow: var(--shadow-md); }
+        .account-dropdown-head { display: flex; flex-direction: column; gap: 3px; padding: 10px 11px 12px; border-bottom: 1px solid var(--border); }
+        .account-dropdown-head strong { color: var(--navy); font-size: 12px; }
+        .account-dropdown-head span { overflow: hidden; color: var(--muted); font-size: 10.5px; text-overflow: ellipsis; }
+        .account-dropdown a, .account-dropdown button { width: 100%; min-height: 36px; display: flex; align-items: center; gap: 9px; padding: 8px 10px; border: 0; border-radius: 5px; color: var(--text); background: transparent; cursor: pointer; font-size: 11.5px; text-align: left; }
+        .account-dropdown a:hover, .account-dropdown button:hover { background: var(--sand); color: var(--navy); }
+        .account-dropdown form { margin-top: 5px; padding-top: 5px; border-top: 1px solid var(--border); }
+        .account-dropdown form button { color: var(--red); }        .topbar-title {
             flex: 1;
             color: var(--navy);
             font-size: 16px;
@@ -439,20 +457,24 @@
             body { display: block; }
             .sidebar { display: none; }
             .topbar { padding: 0 16px; }
+            .account-copy { display: none; }
             .topbar-actions .btn-ghost { display: none; }
             .content { padding: 18px; }
             .stats-grid { grid-template-columns: 1fr; }
         }
     </style>
     @stack('styles')
+<link rel="stylesheet" href="{{ asset('css/responsive.css') }}?v=1">
 </head>
 <body>
     @include('partials.sidebar')
 
     <main class="main">
+        @include('marketplace.mobile-admin-navigation', ['legacy' => true])
         @include('partials.header')
 
-        <div class="content">
+        <div class="content @yield('content-class')">
+            @yield('before-content')
             @yield('content')
         </div>
     </main>

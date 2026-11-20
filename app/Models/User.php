@@ -11,8 +11,23 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
 #[Hidden(['password', 'remember_token'])]
-class User extends Authenticatable
+class User extends Authenticatable implements \Illuminate\Contracts\Auth\MustVerifyEmail
 {
+    public function sendEmailVerificationNotification()
+    {
+        $this->notify(new \App\Notifications\VerifySellerEmail);
+    }
+    public function seller()
+    {
+        if ($this->member_seller_id) return $this->belongsTo(Seller::class, 'member_seller_id');
+        return $this->hasOne(Seller::class);
+    }
+
+    public function ownsSeller(): bool
+    {
+        return $this->account_type === 'seller' && ! $this->member_seller_id && $this->seller?->user_id === $this->id;
+    }
+
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
 
@@ -44,6 +59,7 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
+            'member_is_active' => 'boolean',
             'password' => 'hashed',
         ];
     }

@@ -1,17 +1,12 @@
 <aside class="sidebar">
     <div class="sb-brand">
-        <a href="{{ route('dashboard') }}" class="sb-logo">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
-                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
-            </svg>
-            Chapitre
+        <a href="{{ route('dashboard') }}" class="sb-brand-logo" aria-label="Librairie Dominion - Tableau de bord">
+            <img src="{{ asset('logo-librairie-dominion.png') }}" alt="Librairie Dominion">
         </a>
-        <span class="sb-badge">ADMIN</span>
     </div>
 
     <nav class="sb-nav">
-        <div class="sb-section">Principal</div>
+        @if(auth()->user()?->account_type === 'admin')
         <a class="sb-item {{ request()->routeIs('dashboard') ? 'active' : '' }}" href="{{ route('dashboard') }}">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <rect x="3" y="3" width="7" height="7"/>
@@ -21,12 +16,29 @@
             </svg>
             Tableau de bord
         </a>
+        <div class="sb-section">Marketplace</div>
+        @foreach([
+            ['route' => 'marketplace.inventory', 'match' => 'marketplace.inventory*', 'label' => 'Stocks', 'icon' => 'M3 7l9-4 9 4-9 4-9-4 M3 7v10l9 4 9-4V7 M12 11v10'],
+            ['route' => 'marketplace.advertisements.index', 'match' => 'marketplace.advertisements.*', 'label' => 'Publicités', 'icon' => 'M3 10v4h4l12 5V5L7 10H3 M7 14l2 7h4l-2-5 M21 9v6'],
+            ['route' => 'marketplace.products.index', 'match' => 'marketplace.products.*', 'label' => 'Produits', 'icon' => 'M4 4h6v6H4z M14 4h6v6h-6z M4 14h6v6H4z M14 14h6v6h-6z'],
+            ['route' => 'marketplace.sellers', 'match' => 'marketplace.sellers*', 'label' => 'Vendeurs', 'icon' => 'M3 21v-2a5 5 0 0 1 10 0v2 M8 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8 M16 4a4 4 0 0 1 0 8 M16 15a5 5 0 0 1 5 5v1'],
+            ['route' => 'marketplace.orders', 'match' => 'marketplace.orders*', 'label' => 'Commandes', 'icon' => 'M3 6h18v15H3z M3 6l3-4h12l3 4 M8 10a4 4 0 0 0 8 0'],
+            ['route' => 'marketplace.settings', 'match' => 'marketplace.settings*', 'label' => 'Paramètres', 'icon' => 'M4 7h16 M4 17h16 M8 4v6 M16 14v6'],
+        ] as $item)
+        <a class="sb-item {{ request()->routeIs($item['match']) ? 'active' : '' }}" href="{{ route($item['route']) }}" @if(request()->routeIs($item['match'])) aria-current="page" @endif>
+            <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="{{ $item['icon'] }}"/></svg>
+            {{ $item['label'] }}
+        </a>
+        @endforeach
+        <a class="sb-item {{ request()->routeIs('admin.mail-settings.*') ? 'active' : '' }}" href="{{ route('admin.mail-settings.edit') }}"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 6 9 7 9-7"/></svg>Configuration mail</a>
+        <div class="sb-section">Principal</div>
+
         <a class="sb-item {{ request()->routeIs('admin.books.*') ? 'active' : '' }}" href="{{ route('admin.books.index') }}">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
                 <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
             </svg>
-            Catalogue livres
+            Archives livres
             <span class="sb-badge-count">{{ \Illuminate\Support\Facades\Schema::hasTable('books') ? \App\Models\Book::count() : 0 }}</span>
         </a>
         <a class="sb-item {{ request()->routeIs('admin.orders.*') ? 'active' : '' }}" href="{{ route('admin.orders.index') }}">
@@ -100,6 +112,12 @@
             </svg>
             Parametres
         </a>
+        @else
+        <a class="sb-item" href="{{ route('seller.products.index') }}">Mes produits</a>
+        <a class="sb-item" href="{{ route('seller.orders') }}">Mes commandes</a>
+        <a class="sb-item" href="{{ route('seller.inventory') }}">Mon stock</a>
+        <a class="sb-item" href="{{ route('seller.shop') }}">Ma boutique</a>
+        @endif
     </nav>
 
     <div class="sb-footer">
