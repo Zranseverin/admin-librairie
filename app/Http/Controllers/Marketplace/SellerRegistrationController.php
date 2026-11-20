@@ -16,7 +16,12 @@ class SellerRegistrationController extends Controller
 {
     public function create()
     {
-        return view('marketplace.register', ['googlePending' => (bool) session('seller_google')]);
+        $google = GoogleOAuthSetting::current();
+
+        return view('marketplace.register', [
+            'googlePending' => (bool) session('seller_google'),
+            'googleAvailable' => filled($google->client_id) && filled($google->client_secret),
+        ]);
     }
 
     public function redirectToGoogle()
